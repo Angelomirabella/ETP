@@ -584,6 +584,10 @@ public class TimeTable {
 						for(int i=0;i<tabu.length;i++)
 						{
 							if( tabu[i]!=null &&tabu[i].Equals(m))
+							{
+						//		System.out.println(tabu[i].getE().getId()+" "+tabu[i].getFrom()+" "+tabu[i].getTo());
+							//	System.out.println(m.getE().getId()+" "+m.getFrom()+" "+m.getTo());
+
 								if(obj<best_obj)//aspiration
 								{
 									best=neighbor;
@@ -592,7 +596,7 @@ public class TimeTable {
 								}
 								else
 									bad=true;
-
+							}
 						}
 						if(!bad)
 						{
@@ -613,7 +617,7 @@ public class TimeTable {
 	{
 		int fraction=0,d=1;
 		long flat=0;
-		boolean swap=false;
+		boolean swap=false,changed1=false,changed2=false;
 	 current_solution=Generate_Initial_Solution();
 	   // current_solution=Generate_Initial_Solution_Nemesi();
 	    limit=limit*1000;
@@ -646,7 +650,7 @@ public class TimeTable {
 			{
 				best_obj=current_obj;
 				best_solution=current_solution;
-				//System.out.println(best_obj);
+				System.out.println(best_obj);
 				flat=System.currentTimeMillis();
 				d=1;
 			}
@@ -655,13 +659,24 @@ public class TimeTable {
 			 tabu[index]=best.getM();
 
 			iteration++;
-			if(iteration==500)
+			if(System.currentTimeMillis()-time>limit/4 &&changed1==false)
 				{
-				Move[] tmp=new Move[10];
+				changed1=true;
+				Move[] tmp=new Move[15];
 				for(int i=0;i<tabu.length;i++)
 					tmp[i]=tabu[i];
 				tabu=tmp;
 				}
+
+			if(System.currentTimeMillis()-time>limit/2 &&changed2==false)
+			{
+				changed2=true;
+				System.out.println("Changing size");
+				Move[] tmp=new Move[30];
+				for(int i=0;i<tabu.length;i++)
+					tmp[i]=tabu[i];
+				tabu=tmp;
+			}
 			
 			if(System.currentTimeMillis()-flat>10000*d)
 			{
@@ -684,6 +699,7 @@ public class TimeTable {
 		System.out.println(best_solution);
 		System.out.println("obj di arrivo: "+best_obj);
 		System.out.println(Evaluate(best_solution));
+		System.out.println("Iterations: "+iteration);
 		System.out.println(("total time: "+(System.currentTimeMillis()-time)));
 		return  ;
 	}

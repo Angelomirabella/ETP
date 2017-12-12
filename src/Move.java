@@ -38,7 +38,7 @@ public class Move {
 		else
 			if(e==null)
 				return false;
-		return e.getId()==m.getE().getId() && from==m.getFrom() && to==m.getTo();
+		return e.getId()==m.getE().getId() && ((from==m.getFrom() && to==m.getTo()) || from==m.getTo() );
 	}
 
 }
