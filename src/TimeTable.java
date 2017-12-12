@@ -130,7 +130,7 @@ public class TimeTable {
 				 }
 			 }
 			 System.out.println(Arrays.deepToString(n)); 
-			 //calcolo nemesi
+	/*		 //calcolo nemesi
 			 
 			 for(int i=0;i<E;i++)
 			 {
@@ -149,7 +149,7 @@ public class TimeTable {
 				 e.setNemesi(id, max);
 			 }
 			 
-			 
+			 */
 		 }  catch (IOException e) {};
 		 
 		 
@@ -237,105 +237,7 @@ public class TimeTable {
 		}
 		return compatibile;
 	}
-	public SortedMap <Integer,List<Exam>> Generate_Initial_Solution_Nemesi() {
-		while(!trovato){
-			initialSolution = initializeInitialSolution();  				
-			SortedMap<Integer,Exam> esamiDaAssegnare = copiaEsami(); 		
-			continua=true;
-			
-			while(!esamiDaAssegnare.isEmpty() && continua) {	
-				Exam esameScelto;
-				worst=tmax;													
-				esamiPeggiori = new ArrayList<>();
-				Iterator<Exam> iter = esamiDaAssegnare.values().iterator();
-				
-				while(iter.hasNext() && continua) {
-					Exam e = iter.next();
-					List<Integer> timeSlotsDisponibili = new ArrayList<>();
-					count=0;
-					for(int i=1; i<=tmax; i++){
-						if(checkTimeslot(i, e.getId(),initialSolution)){
-							count++;
-							timeSlotsDisponibili.add(i);
-						}
-					}
-					if(!timeSlotsDisponibili.isEmpty()) {
-						e.setTimeSlotsDisponibili(timeSlotsDisponibili);
-						if(count<worst || esamiPeggiori.isEmpty()){
-							esamiPeggiori = new ArrayList<>();
-							worst=count;
-							esamiPeggiori.add(e);
-						}
-						else if(count==worst){
-							esamiPeggiori.add(e);
-						}
-					}
-					else
-						continua = false;
-				}
-				
-				if(continua) {
-					esamiPeggiori.sort(comparing(Exam::getConflict,reverseOrder()));
-					//esameScelto = esamiPeggiori.get(new Random().nextInt(esamiPeggiori.size()));
-					esameScelto=esamiPeggiori.get(0);
-			
-					int r = esameScelto.getTimeSlotsDisponibili().get(new Random().nextInt(esameScelto.getTimeSlotsDisponibili().size()));
-					if(checkTimeslot(r, esameScelto.getId(),initialSolution) && esameScelto.getTime_slot()==-1)
-					{
-						
-						Exam nemesi=esamiDaAssegnare.get(esameScelto.getNemesi());
-						if(nemesi!=null)
-						{
-							initialSolution.get(r).add(esameScelto);
-							esameScelto.setTime_slot(r);
-							boolean stop=false;
-							for(int i=(r+6)%tmax; stop==false;i=(i+1)%tmax)
-							{
-								if(i==0)
-									i=tmax;
-								if(checkTimeslot(i,nemesi.getId(),initialSolution))
-								{
-									initialSolution.get(i).add(nemesi);
-									nemesi.setTime_slot(i);
-									esamiDaAssegnare.remove(nemesi.getId());
-									stop=true;
-								}
-								
-							}
-						}
-						else //nemesi gia assegnata
-						{
-							boolean stop=false;
-							nemesi=exams.get(esameScelto.getNemesi());
-							int t=nemesi.getTime_slot();
-							for(int i=(t+6)%tmax;stop==false;i=(i+1)%tmax)
-							{
-								if(i==0)
-									i=tmax;
-								if(checkTimeslot(i,esameScelto.getId(),initialSolution))
-								{
-									initialSolution.get(i).add(esameScelto);
-									esameScelto.setTime_slot(i);
-									stop=true;
-								}
-								
-							}
-						}
-                         					
-					}
-			
-					esamiDaAssegnare.remove(esameScelto.getId());
-				}
-			}
-			
-			if(esamiDaAssegnare.isEmpty())
-				trovato=true;
-		}
-		
-		exams.values().stream().forEach(e->System.out.println(e.getId()+ " "+e.getTime_slot()));
-		return initialSolution;
 
-	}
 	
 	public SortedMap <Integer,List<Exam>> Generate_Initial_Solution() {
 		while(!trovato){
@@ -774,96 +676,7 @@ public class TimeTable {
 				//current_obj=best_obj;
 			}
 		}
-	/*	fraction++;
-		Print();
-		System.out.println(("partial time: "+(System.currentTimeMillis()-time)));
-		System.out.println(best_obj);
-		current_solution=best_solution;
-		current_obj=best_obj;
-		
-		while( System.currentTimeMillis()-time<limit*fraction/5)//secondo livello sposto solo i ts
-		{
-			neighborhood=Generate_Neighborhood();
-			//neighborhood=GenerateNeighborhoodExams();
-			Neighbor best=best_In_Neighborhood();
-			
-			current_solution=best.getSolution();
-			//current_obj=Evaluate(current_solution);
-			current_obj=best.getObj();
-			if(current_obj<best_obj)
-			{
-				best_obj=current_obj;
-				best_solution=current_solution;
-				System.out.println(best_obj);
 
-			}
-
-			int  index=iteration%tabu.length;
-			 tabu[index]=best.getM();
-
-			iteration++;
-
-			
-		}
-		fraction++;
-		
-		
-		/*
-		Print();
-		current_solution=best_solution;
-
-		
-		while( System.currentTimeMillis()-time<limit*3/4)//sostituire con il limite di tempo
-		{					 // primo livello sposto gli esami
-			//neighborhood=Generate_Neighborhood();
-			neighborhood=GenerateNeighborhoodExams();
-			Neighbor best=best_In_Neighborhood();
-			
-			current_solution=best.getSolution();
-			//current_obj=Evaluate(current_solution);
-			current_obj=best.getObj();
-			if(current_obj<best_obj)
-			{
-				best_obj=current_obj;
-				best_solution=current_solution;
-			}
-
-			int  index=iteration%tabu.length;
-			 tabu[index]=best.getM();
-
-			iteration++;
-			if(iteration==500)
-				{
-				Move[] tmp=new Move[15];
-				for(int i=0;i<tabu.length;i++)
-					tmp[i]=tabu[i];
-				tabu=tmp;
-				}
-			
-		}
-		
-		current_solution=best_solution;
-		Print();
-		while( System.currentTimeMillis()-time<limit)//secondo livello sposto solo i ts
-		{
-			neighborhood=Generate_Neighborhood();
-			//neighborhood=GenerateNeighborhoodExams();
-			Neighbor best=best_In_Neighborhood();
-			
-			current_solution=best.getSolution();
-			//current_obj=Evaluate(current_solution);
-			current_obj=best.getObj();
-			if(current_obj<best_obj)
-			{
-				best_obj=current_obj;
-				best_solution=current_solution;
-			}
-
-			int  index=iteration%tabu.length;
-			 tabu[index]=best.getM();
-
-			iteration++;
-		}*/
 	}
 		Print();
 		
