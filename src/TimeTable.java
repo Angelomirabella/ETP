@@ -615,7 +615,7 @@ public class TimeTable {
 	
 	public void Solve(long time,long limit)
 	{
-		int fraction=0,d=1;
+		int cnt=0,d=1;
 		long flat=0;
 		boolean swap=false,changed1=false,changed2=false;
 	 current_solution=Generate_Initial_Solution();
@@ -636,12 +636,46 @@ public class TimeTable {
 		current_obj=best_obj;
 		while( System.currentTimeMillis()-time<limit/**fraction/5*/)///sostituire con il limite di tempo
 		{					 // primo livello sposto gli esami
+		
+			
+		if(iteration>20)
+		{
 			if(swap==false)
 			neighborhood=GenerateNeighborhoodExams();
 			else
 				neighborhood=Generate_Neighborhood();
+		}
+		else
+			neighborhood=Generate_Neighborhood();
 
-			Neighbor best=best_In_Neighborhood();
+			
+			
+/*			if(iteration<20)
+				neighborhood=Generate_Neighborhood();
+				
+			if(!swap)
+			{
+			 cnt++;
+			neighborhood=GenerateNeighborhoodExams();
+			if(cnt ==80)
+			{
+				cnt=0;
+				swap=true;
+			}
+			}
+			else
+			{
+				cnt++;
+				neighborhood=Generate_Neighborhood();
+				if(cnt==15)
+				{
+					cnt=0;
+					swap=false;
+				}
+			}
+			
+		
+	*/		Neighbor best=best_In_Neighborhood();
 			
 			current_solution=best.getSolution();
 			//current_obj=Evaluate(current_solution);
@@ -672,13 +706,22 @@ public class TimeTable {
 			{
 				changed2=true;
 				System.out.println("Changing size");
+				Move[] tmp=new Move[25];
+				for(int i=0;i<tabu.length;i++)
+					tmp[i]=tabu[i];
+				tabu=tmp;
+			}
+			if(System.currentTimeMillis()-time>limit*3/4 &&changed2==false)
+			{
+				changed2=true;
+				System.out.println("Changing size");
 				Move[] tmp=new Move[30];
 				for(int i=0;i<tabu.length;i++)
 					tmp[i]=tabu[i];
 				tabu=tmp;
 			}
 			
-			if(System.currentTimeMillis()-flat>10000*d)
+			if(System.currentTimeMillis()-flat>5000*d)
 			{
 				d++;//se non trovo migliore dopo swap aspetto il doppio del tempo prima di altro swap
 				flat=System.currentTimeMillis();
