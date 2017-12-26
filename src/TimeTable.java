@@ -611,7 +611,7 @@ public class TimeTable {
 		iteration=0;
 		boolean half=false,reduce=false,quart=false;
 		int relax=0;
-		int factor=0;
+		int factor=1;
 		int countExams=0;  //non serve
 		int countTimeslots=0; //non serve
 		int count_swap=0;
@@ -635,7 +635,7 @@ public class TimeTable {
 					//ins05
 				else				//*2
 				 {
-					factor=25;
+					factor=22;
 					reduce=true;
 					relax=DIM_H/2;//2
 					badIterationsLimit=DIM_H; //1
@@ -761,12 +761,13 @@ public class TimeTable {
 				//reduce=false;
 					factor=5;         // in ins5 cancellato
 					count_swap=0;
+					cattivo=0;
 					tabuExams=new Move[DIM_TS];
 					lastExams = new Exam[DIM_H];
 				}
 			}
 			
-			if(System.currentTimeMillis()-time>limit*2/3 && quart==false)
+			if(System.currentTimeMillis()-time>limit*2 && quart==false)
 			{
 				r=0.1;
 				System.out.println("--2/3--");
@@ -776,9 +777,10 @@ public class TimeTable {
 					current_solution=best_solution;//intensifico partendo da best
 					current_obj=best_obj;
 					reduce=false;
-//					count_swap=0;
-	///				tabuExams=new Move[DIM_TS];
-		//			lastExams = new Exam[DIM_H];
+					count_swap=0;				
+					cattivo=0;
+					tabuExams=new Move[DIM_TS];
+					lastExams = new Exam[DIM_H];
 				}
 			}
 			iteration++;
