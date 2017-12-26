@@ -24,9 +24,18 @@ public class TimeTable {
 	private SortedMap<Integer,List<Exam>> initialSolution;
 	private SortedMap<Integer,List<Exam>> current_solution;
 	private SortedMap<Integer,List<Exam>> best_solution;
-	private Move[] tabu;
+	private Move[] tabuTimeslots;
+	private Move[] tabuExams;
+	private Exam [] lastExams;
 //	private List<Move> moves;
-	private List<Neighbor> neighborhood;
+	private List<Neighbor> neighborhoodExams;
+	private List<Neighbor> neighborhoodTimeslots;
+	private Exam incompatibile;
+	private int DIM_H = 0;
+	private int DIM_TS = 15;
+	private int enrollments = 0;
+	private double media=0;
+	private double r=0.15;//0.15
 	
 	
 	public TimeTable()
@@ -34,8 +43,11 @@ public class TimeTable {
 		exams=new TreeMap<>();
 		students=new TreeMap<>();
 		current_solution=new TreeMap<>();
-		tabu=new Move[4];
-		neighborhood=new ArrayList<>();
+		tabuTimeslots=new Move[4];
+		//tabuExams=new Move[DIM_TS];
+		
+		neighborhoodExams=new ArrayList<>();
+		neighborhoodTimeslots=new ArrayList<>();
 	}
 	
 	public void Initialize (String slo,String stu, String exm)
@@ -63,6 +75,7 @@ public class TimeTable {
 				 {
 				 s=new Scanner(line);
 				 Exam e=new Exam(s.nextInt(),s.nextInt());
+				 enrollments+=e.getTot_stud();
 				 exams.put(e.getId(),e);
 				 s.close();
 				 }
@@ -71,7 +84,55 @@ public class TimeTable {
 			 n=new int[E][E];
 
 		 }  catch (IOException e) {};
-		 
+		 DIM_TS=E/9;//modified
+			tabuExams=new Move[DIM_TS];
+
+		 media = enrollments/exams.size();
+		 if(E>200)
+		 {	
+			 
+			 
+			if(E>400) 
+			 {
+			  if(E<600)	
+			  {
+				  for(int j=1; j<=exams.size(); j++) {  //per 5
+			 
+					int nStud=exams.get(j).getTot_stud();
+					if(nStud<(media/2.5))//2.5
+						DIM_H++;
+			   }
+			  }
+			  else //per 6
+			  {
+				  for(int j=1; j<=exams.size(); j++) {  
+						 
+						int nStud=exams.get(j).getTot_stud();
+						if(nStud<(media/2.5))//2.5
+							DIM_H++;
+			     }
+			  } 
+			 }
+			else
+			 {
+				for(int j=1; j<=exams.size(); j++) {  //per 4
+				int nStud=exams.get(j).getTot_stud();
+				if(nStud<(media/2.5))//2.5
+					DIM_H++;
+			 }
+			}
+		 }
+		 else //if (E>100) //per la 1-2-3 va un po meglio e 7
+		 {
+			 for(int j=1; j<=exams.size(); j++) {
+					int nStud=exams.get(j).getTot_stud();
+					if(nStud<(media/1.5))
+						DIM_H++;
+				}
+		 }
+		
+			lastExams = new Exam[DIM_H];
+		 System.out.println("light--> " + DIM_H);
 		 try(BufferedReader in=new BufferedReader(new FileReader(stu));
 			 PrintWriter out=new PrintWriter(new FileWriter("prova.txt")))
 		 {   
@@ -106,7 +167,6 @@ public class TimeTable {
 			  }
 			 }
 			
-			 //System.out.println(students.keySet().size());
 			 S=students.keySet().size();
 			 //popolo n_ij
 			 for (int i=0; i<S;i++)
@@ -129,70 +189,41 @@ public class TimeTable {
 					 
 				 }
 			 }
-			 System.out.println(Arrays.deepToString(n)); 
-	/*		 //calcolo nemesi
-			 
-			 for(int i=0;i<E;i++)
-			 {
-				 int max=-1;
-				 int id=-1;
-				 for(int j=0;j<E;j++)
-				 {
-					 if(n[i][j]>max)
-					 {
-						 max=n[i][j];
-						 id=j+1;
-					 }
-				 }
-				 
-				 Exam e=exams.get(i+1);
-				 e.setNemesi(id, max);
-			 }
-			 
-			 */
+			// System.out.println(Arrays.deepToString(n)); 
+
 		 }  catch (IOException e) {};
 		 
 		 
 	}
 
 	
-	private double Evaluate(SortedMap<Integer,List<Exam>> solution)
-	{
+	private double Evaluate(SortedMap<Integer,List<Exam>> solution) {
 		double obj=0;
-		for (int i=1;i<=tmax-1;i++) 
-		{
-			if(!solution.get(i).isEmpty())
-			{
+		for (int i=1;i<=tmax-1;i++) {
+			if(!solution.get(i).isEmpty()) {
 				List<Exam>l=solution.get(i);
 
-			Iterator<Exam> iter=l.iterator();
-			while(iter.hasNext())//per ogni esame di ogni time_slot
-			{
-				Exam e=iter.next();
-				for(int j=i+1;j<=i+5 && j<=tmax;j++) //devo considerare la penalità
-				{
-					if(!solution.get(j).isEmpty())
-					{
-					List<Exam> l_int=solution.get(j);
-					Iterator<Exam> iter_int=l_int.iterator();
-					while(iter_int.hasNext())
-					{
-						Exam e_int=iter_int.next();
-						int distance=Math.abs(e.getTime_slot()-e_int.getTime_slot());
-						
-							int row=e.getId()-1;
-							int col=e_int.getId()-1;
-							double po=Math.pow(2,5-distance);
+				Iterator<Exam> iter=l.iterator();
+				while(iter.hasNext()) {
+					Exam e=iter.next();
+					for(int j=i+1;j<=i+5 && j<=tmax;j++) {
+						if(!solution.get(j).isEmpty()) {
+						List<Exam> l_int=solution.get(j);
+						Iterator<Exam> iter_int=l_int.iterator();
+						while(iter_int.hasNext()) {
+							Exam e_int=iter_int.next();
+							int distance=Math.abs(e.getTime_slot()-e_int.getTime_slot());
 							
-							obj+=po*n[row][col];
-						
-					    
+								int row=e.getId()-1;
+								int col=e_int.getId()-1;
+								double po=Math.pow(2,5-distance);
+								
+								obj+=po*n[row][col];    
+						}
 					}
 				}
 			}
-		}
-		}
-		
+		}	
 	}
 		return obj/S;
 	}
@@ -201,7 +232,7 @@ public class TimeTable {
 	
 	private void Print()
 	{
-		try(PrintWriter out=new PrintWriter(new FileWriter("C:\\\\Users\\\\angij\\\\Desktop\\\\Polito magistrale 1 anno\\\\Optimization methods and algoritms\\\\Assignment\\instancename_OMAAL_group04.sol")))
+		try(PrintWriter out=new PrintWriter(new FileWriter("C:\\Users\\angij\\Desktop\\Polito magistrale 1 anno\\Optimization methods and algoritms\\Assignment\\instancename_OMAAL_group04.sol")))
 		{			
 			best_solution.values().stream().flatMap(l->l.stream()).sorted(comparing(e->e.getId())).forEach(e->out.format("%d %d\n",e.getId(),e.getTime_slot()));
 	 }catch (IOException e) {};
@@ -225,20 +256,23 @@ public class TimeTable {
 		return num=num+size;
 	}
 
-	public boolean checkTimeslot(int j, int i,SortedMap<Integer,List<Exam>> solution) {
+	public int checkTimeslot(int j, int i,SortedMap<Integer,List<Exam>> solution) {
 		final int idx = i;
-		compatibile = true;
+		int incompatibilita = 0;
 		if(solution.get(j).size() != 0){
 			List<Exam> listOfExams = solution.get(j);
-			listOfExams.stream().forEach(e -> {
-				if(n[e.getId()-1][idx-1] != 0)
-					compatibile = false;
-			});
+			Iterator<Exam> iter = listOfExams.iterator();
+			while(iter.hasNext()) {
+				Exam e = iter.next();
+				if(n[e.getId()-1][idx-1] != 0) {
+					incompatibilita++;
+					incompatibile=e;
+				}
+			}
 		}
-		return compatibile;
+		return incompatibilita;
 	}
 
-	
 	public SortedMap <Integer,List<Exam>> Generate_Initial_Solution() {
 		while(!trovato){
 			initialSolution = initializeInitialSolution();  				
@@ -256,7 +290,7 @@ public class TimeTable {
 					List<Integer> timeSlotsDisponibili = new ArrayList<>();
 					count=0;
 					for(int i=1; i<=tmax; i++){
-						if(checkTimeslot(i, e.getId(),initialSolution)){
+						if(checkTimeslot(i, e.getId(),initialSolution)==0){
 							count++;
 							timeSlotsDisponibili.add(i);
 						}
@@ -293,34 +327,22 @@ public class TimeTable {
 	//	System.out.println("Esami assegnati: " + num);
 		return initialSolution;
 	}
-	
 
 	private List<Neighbor> Generate_Neighborhood() {
 		List<Neighbor> res=new ArrayList<>();
-		//List<Move> m=new ArrayList<>();
 
-		for(int i=1;i<=tmax;i++)
-		{
-		
-		 for(int j=i+1;j<=tmax;j++)
-		 { 	
-			 //dopo aver generato il clone faccio modifica al ts ->genero tutti gli swap
-			SortedMap<Integer,List<Exam>> neighbor=Clone_solution();
-			List<Exam> first=neighbor.remove(i);
-			
+		for(int i=1;i<=tmax;i++) {
+			SortedMap<Integer,List<Exam>> neighbor1=Clone_solution();
+			List<Exam> first=neighbor1.get(i);
 			Iterator<Exam> iter=first.iterator();
-			double obj_neighbor=current_obj*S;
-			while(iter.hasNext())//calcolo obj del neighbor da quella della soluzione corrente
-			{
+			double diff=current_obj*S;
+			while(iter.hasNext()) {
 				Exam e=iter.next();
-				for(int k=i-5;k<=i+5 && k<=tmax ;k++)
-				{
-					if(k>0 &&k!=i)
-					{
-						List<Exam> l_int=neighbor.get(k);
+				for(int k=i-5;k<=i+5 && k<=tmax ;k++) {
+					if(k>0 &&k!=i) {
+						List<Exam> l_int=neighbor1.get(k);
 						Iterator<Exam> iter_int=l_int.iterator();
-						while(iter_int.hasNext())
-						{
+						while(iter_int.hasNext()) {
 							Exam e_int=iter_int.next();
 													//i
 							int distance=Math.abs(e.getTime_slot()-e_int.getTime_slot());
@@ -329,186 +351,168 @@ public class TimeTable {
 							int col=e_int.getId()-1;
 							double po=Math.pow(2,5-distance);
 							
-							obj_neighbor-=po*n[row][col]; //- devo sottrarre
+							diff-=po*n[row][col]; //- devo sottrarre
 						}
 					}
 				}
 			}
-   
-			
-			List<Exam> second=neighbor.remove(j);
-			
-			
-			
-			Iterator<Exam> iter_second=second.iterator();
-			while(iter_second.hasNext())//calcolo obj del neighbor da quella della soluzione corrente
-			{
-				Exam e=iter_second.next();
-				for(int k=j-5;k<=j+5 && k<=tmax ;k++)
-				{
-					if(k>0 &&k!=i &&k!=j) //il caso k=i è incluso nel ciclo precedente
-					{
-						List<Exam> l_int=neighbor.get(k);
-						Iterator<Exam> iter_int=l_int.iterator();
-						while(iter_int.hasNext())
-						{
-							Exam e_int=iter_int.next();
-													//i
-							int distance=Math.abs(e.getTime_slot()-e_int.getTime_slot());
-							
-							int row=e.getId()-1;
-							int col=e_int.getId()-1;
-							double po=Math.pow(2,5-distance);
-							
-							obj_neighbor-=po*n[row][col]; //- devo sottrarre
+			for(int j=i+1;j<=tmax;j++) { 	
+				 //dopo aver generato il clone faccio modifica al ts ->genero tutti gli swap
+				SortedMap<Integer,List<Exam>> neighbor=Clone_solution();
+				double obj_neighbor=diff;
+				if(!(neighbor.get(i).isEmpty() && neighbor.get(j).isEmpty())) {
+				first=neighbor.remove(i);
+	
+				List<Exam> second=neighbor.remove(j);
+				
+				Iterator<Exam> iter_second=second.iterator();
+				while(iter_second.hasNext()) {
+					Exam e=iter_second.next();
+					for(int k=j-5;k<=j+5 && k<=tmax ;k++) {
+						if(k>0 &&k!=i &&k!=j) {
+							List<Exam> l_int=neighbor.get(k);
+							Iterator<Exam> iter_int=l_int.iterator();
+							while(iter_int.hasNext()) {
+								Exam e_int=iter_int.next();
+														//i
+								int distance=Math.abs(e.getTime_slot()-e_int.getTime_slot());
+								
+								int row=e.getId()-1;
+								int col=e_int.getId()-1;
+								double po=Math.pow(2,5-distance);
+								
+								obj_neighbor-=po*n[row][col]; //- devo sottrarre
+							}
 						}
 					}
 				}
-			}
-			for(int k=0;k<first.size();k++)  //coerenza tra mappa e timeslot in ogni esame
-		    	first.get(k).setTime_slot(j);
-
-			for(int k=0;k<second.size();k++)      
-				second.get(k).setTime_slot(i);
-			neighbor.put(i,second);
-			neighbor.put(j, first);
+				
+				for(int k=0;k<first.size();k++)  //coerenza tra mappa e timeslot in ogni esame
+			    	first.get(k).setTime_slot(j);
 			
-			//adesso sommmo dopo aver scambiato le liste
-			first=neighbor.get(i);
-			 iter=first.iterator();
-			while(iter.hasNext())//calcolo obj del neighbor da quella della soluzione corrente
-			{
-				Exam e=iter.next();
-				for(int k=i-5;k<=i+5 && k<=tmax ;k++)
-				{
-					if(k>0 && k!=i)
-					{
-						List<Exam> l_int=neighbor.get(k);
-						Iterator<Exam> iter_int=l_int.iterator();
-						while(iter_int.hasNext())
-						{
-							Exam e_int=iter_int.next();
-													//i
-							int distance=Math.abs(e.getTime_slot()-e_int.getTime_slot());
-							
-							int row=e.getId()-1;
-							int col=e_int.getId()-1;
-							double po=Math.pow(2,5-distance);
-							
-							obj_neighbor+=po*n[row][col]; //sommo
+				for(int k=0;k<second.size();k++)      
+					second.get(k).setTime_slot(i);
+				neighbor.put(i,second);
+				neighbor.put(j, first);
+				
+				//adesso sommmo dopo aver scambiato le liste
+				first=neighbor.get(i);
+				 iter=first.iterator();
+				while(iter.hasNext()) {//calcolo obj del neighbor da quella della soluzione corrente
+					Exam e=iter.next();
+					for(int k=i-5;k<=i+5 && k<=tmax ;k++) {
+						if(k>0 && k!=i) {
+							List<Exam> l_int=neighbor.get(k);
+							Iterator<Exam> iter_int=l_int.iterator();
+							while(iter_int.hasNext()) {
+								Exam e_int=iter_int.next();
+														//i
+								int distance=Math.abs(e.getTime_slot()-e_int.getTime_slot());
+								
+								int row=e.getId()-1;
+								int col=e_int.getId()-1;
+								double po=Math.pow(2,5-distance);
+								
+								obj_neighbor+=po*n[row][col]; //sommo
+							}
 						}
 					}
 				}
-			}
-			
-		second=neighbor.get(j);
-			 iter_second=second.iterator();
-			while(iter_second.hasNext())//calcolo obj del neighbor da quella della soluzione corrente
-			{
-				Exam e=iter_second.next();
-				for(int k=j-5;k<=j+5 && k<=tmax ;k++)
-				{
-					if(k>0 &&k!=i&&k!=j) //il caso k=i è incluso nel ciclo precedente
-					{
-						List<Exam> l_int=neighbor.get(k);
-						Iterator<Exam> iter_int=l_int.iterator();
-						while(iter_int.hasNext())
-						{
-							Exam e_int=iter_int.next();
-													//i
-							int distance=Math.abs(e.getTime_slot()-e_int.getTime_slot());
-							
-							int row=e.getId()-1;
-							int col=e_int.getId()-1;
-							double po=Math.pow(2,5-distance);
-							
-							obj_neighbor+=po*n[row][col]; //sommo
+				
+				second=neighbor.get(j);
+				iter_second=second.iterator();
+				while(iter_second.hasNext()) {
+					Exam e=iter_second.next();
+					for(int k=j-5;k<=j+5 && k<=tmax ;k++) {
+						if(k>0 &&k!=i&&k!=j) {
+							List<Exam> l_int=neighbor.get(k);
+							Iterator<Exam> iter_int=l_int.iterator();
+							while(iter_int.hasNext()) {
+								Exam e_int=iter_int.next();
+														//i
+								int distance=Math.abs(e.getTime_slot()-e_int.getTime_slot());
+								
+								int row=e.getId()-1;
+								int col=e_int.getId()-1;
+								double po=Math.pow(2,5-distance);
+								
+								obj_neighbor+=po*n[row][col]; //sommo
+							}
 						}
 					}
 				}
-			}
-		//	System.out.println(Evaluate(neighbor));
-			obj_neighbor=obj_neighbor/S;
+				obj_neighbor=obj_neighbor/S;
+				Move move;
+				if(second.size()!=0)
+				   move=new Move(second.get(0),j,i);
+				else
+				   move=new Move(first.get(0),i,j);
+				move.setScambiato(first.get(0));
+			    Neighbor n=new Neighbor(neighbor,move,obj_neighbor);
+			    res.add(n);
 			
-			//res.add(neighbor);
-			Move move;
-			if(first.size()!=0)
-			   move=new Move(first.get(0),j,i);//il primo esame della lista rappresenta lo spostamento dell'intera lista
-			else
-			   move=new Move(null,j,i);//Se sposto da i->j mossa inversa proibita j->i
-												// Move (null,j,i) se lista vuota
-			//m.add(move); //Ricavo la mossa usando come indice l'indice del neighbor scelto nel neighborhood
-		   Neighbor n=new Neighbor(neighbor,move,obj_neighbor);
-			//Neighbor n=new Neighbor(neighbor,move,Evaluate(neighbor));
-		  //  System.out.println(Evaluate(neighbor));
-		    res.add(n);
-
-		  
-		 }
+			  
+			 }
 		}
-	//	moves=m;
-		//System.out.println(res.size());
+		}
+		
 		return res;
 	}
 	
-	
-	
-	private List<Neighbor> GenerateNeighborhoodExams(){
+	private List<Neighbor> GenerateNeighborhoodExams(boolean reduce, int factor){
 		List<Neighbor> res=new ArrayList<>();
 		
 		for(int i=1;i<=tmax;i++) {
-		//SortedMap<Integer,List<Exam>> neighbor=Clone_solution();
 			List<Exam> esami=current_solution.get(i);
 			Iterator<Exam> iter = esami.iterator();
-			
 			while(iter.hasNext()) {
 				Exam e = iter.next();
 				int index=esami.indexOf(e);
 				List<Integer> timeSlotsDisponibili = new ArrayList<>();
 				for(int k=1; k<=tmax; k++){
-					if(checkTimeslot(k, e.getId(), current_solution) && k!=i){
+					if(checkTimeslot(k, e.getId(), current_solution)==0 && k!=i){
 						timeSlotsDisponibili.add(k);
 					}
 				}
 				if(!timeSlotsDisponibili.isEmpty()) {
+						int r=new Random().nextInt(factor);//25
+						if(r==0 || reduce==false) {
+					
+					SortedMap<Integer,List<Exam>> vicino1=Clone_solution();
+					double diff=current_obj*S;
+					Exam e_int=vicino1.get(i).get(index);
+					for(int k=i-5;k<=i+5 &&k<=tmax;k++) {
+						if(k>0 && k!=i) {
+							List<Exam> l_int=vicino1.get(k);
+							Iterator<Exam> iter_int=l_int.iterator();
+							while(iter_int.hasNext()) {
+								Exam e2=iter_int.next();
+														//i
+								int distance=Math.abs(e_int.getTime_slot()-e2.getTime_slot());
+								
+								int row=e_int.getId()-1;
+								int col=e2.getId()-1;
+								double po=Math.pow(2,5-distance);
+								
+								diff-=po*n[row][col]; //- devo sottrarre
+							}
+						}
+					}
+					
 					Iterator<Integer> iter2 = timeSlotsDisponibili.iterator();
 					while(iter2.hasNext()) {
 						int t=iter2.next();
 						SortedMap<Integer,List<Exam>> vicino=Clone_solution();
-						double obj_neighbor=current_obj*S;
-						Exam e_int=vicino.get(i).get(index);
-						for(int k=i-5;k<=i+5 &&k<=tmax;k++)
-						{
-							if(k>0 && k!=i)
-							{
-								List<Exam> l_int=vicino.get(k);
-								Iterator<Exam> iter_int=l_int.iterator();
-								while(iter_int.hasNext())
-								{
-									Exam e2=iter_int.next();
-															//i
-									int distance=Math.abs(e_int.getTime_slot()-e2.getTime_slot());
-									
-									int row=e_int.getId()-1;
-									int col=e2.getId()-1;
-									double po=Math.pow(2,5-distance);
-									
-									obj_neighbor-=po*n[row][col]; //- devo sottrarre
-								}
-							}
-						}
+						e_int=vicino.get(i).get(index);
+						double obj_neighbor=diff;
 						vicino.get(t).add(e_int);
 						e_int.setTime_slot(t);
-						
-						
-						for(int k=t-5;k<=t+5 &&k<=tmax;k++)
-						{
-							if(k>0 && k!=t)
-							{
+						vicino.get(i).remove(index);
+						for(int k=t-5;k<=t+5 &&k<=tmax;k++) {
+							if(k>0 && k!=t) {
 								List<Exam> l_int=vicino.get(k);
 								Iterator<Exam> iter_int=l_int.iterator();
-								while(iter_int.hasNext())
-								{
+								while(iter_int.hasNext()) {
 									Exam e2=iter_int.next();
 															//i
 									int distance=Math.abs(e_int.getTime_slot()-e2.getTime_slot());
@@ -523,25 +527,13 @@ public class TimeTable {
 						}
 						
 						obj_neighbor=obj_neighbor/S;
-						vicino.get(i).remove(index);
-						//System.out.println(Evaluate(vicino));
-						
-					/*	int idx=0;
-						Iterator<Exam> iter3 = vicino.get(i).iterator();
-						int count=0;
-						while(iter3.hasNext()) {
-							Exam ex=iter3.next();
-							if(ex.getId() == e.getId())
-								idx=count;
-							else
-								count++;
-						}*/
-						Neighbor nei=new Neighbor(vicino, new Move(e, t, i),obj_neighbor); //molto più veloce ok
-						//Neighbor nei=new Neighbor(vicino, new Move(e, t, i),Evaluate(vicino));
-
+						Neighbor nei=new Neighbor(vicino, new Move(e_int, t, i),obj_neighbor);
 						res.add(nei);
-					}	
-				}
+						
+					}
+						}
+				 }
+				
 			}
 		}
 		
@@ -552,8 +544,7 @@ public class TimeTable {
 	private SortedMap<Integer, List<Exam>> Clone_solution() {
 
 		SortedMap<Integer,List<Exam>> clone=initializeInitialSolution();
-		for(int i=1;i<=tmax;i++)
-		{
+		for(int i=1;i<=tmax;i++) {
 			List<Exam> l=current_solution.get(i);
 			List<Exam> l_new=clone.get(i);
 			l.stream().forEach(e->{
@@ -562,190 +553,246 @@ public class TimeTable {
 			});
 		}
 		
-		
 		return clone;
 	}
 
-	private Neighbor best_In_Neighborhood() {
-
-			Neighbor best=null;
-		  double best_obj_in_neighborhood=-1;
-			Iterator<Neighbor> iter=neighborhood.iterator();
-			while(iter.hasNext())
-			{
-				Neighbor neighbor=iter.next();
-				double obj=neighbor.getObj();
-	
-					if(obj<best_obj_in_neighborhood|| best_obj_in_neighborhood==-1)//se migliore delle altre
-					{
-						//int index=neighborhood.indexOf(neighbor);
-						Move m=neighbor.getM();
-						boolean bad=false;
-						for(int i=0;i<tabu.length;i++)
-						{
-							if( tabu[i]!=null &&tabu[i].Equals(m))
-							{
-						//		System.out.println(tabu[i].getE().getId()+" "+tabu[i].getFrom()+" "+tabu[i].getTo());
-							//	System.out.println(m.getE().getId()+" "+m.getFrom()+" "+m.getTo());
-
-								if(obj<best_obj)//aspiration
-								{
-									best=neighbor;
-									best_obj_in_neighborhood=obj;
-									//la mossa è già in tabu list e non la tocco
-								}
-								else
-									bad=true;
+	private Neighbor best_In_Neighborhood(Move[] tabu, List<Neighbor> neighborhood, int ts) {
+		Neighbor best=null;
+		double best_obj_in_neighborhood=-1;
+		Iterator<Neighbor> iter=neighborhood.iterator();
+		while(iter.hasNext()) {
+			Neighbor neighbor=iter.next();
+			double obj=neighbor.getObj();
+			if(obj<best_obj_in_neighborhood|| best_obj_in_neighborhood==-1) {
+				Move m=neighbor.getM();
+				boolean bad=false;
+				for(int i=0; i<lastExams.length; i++)
+					if(lastExams[i]!= null && lastExams[i].getId()==m.getE().getId())
+						bad=true;
+				if(bad==false) {
+					for(int i=0;i<tabu.length && tabu[i]!=null;i++) {																																								//modified
+						if(tabu[i]!=null && (ts==0 && tabu[i].getE().getId()==m.getE().getId() && ((tabu[i].getTo()==m.getFrom() && tabu[i].getFrom()==m.getTo()) || (tabu[i].getTo()==m.getTo() && tabu[i].getFrom()==m.getFrom()) || tabu[i].getTo()==m.getFrom())
+								|| (ts==1 && tabu[i].getScambiato()!=null && (tabu[i].getE().getId()==m.getE().getId() || m.getE().getId()==tabu[i].getScambiato().getId()) && ((tabu[i].getTo()==m.getFrom() && tabu[i].getFrom()==m.getTo()) || (tabu[i].getTo()==m.getTo() && tabu[i].getFrom()==m.getFrom())))))
+							if(obj<best_obj) { //aspiration
+								best=neighbor;
+								best_obj_in_neighborhood=obj;
+								//la mossa è già in tabu list e non la tocco
 							}
-						}
-						if(!bad)
-						{
-						 best_obj_in_neighborhood=obj;
-						 best=neighbor;
-					//	int  index=iteration%tabu.length;//continuo a sovrascrivere fino a quando non trovo il migliore nel neighborhood
-						// tabu[index]=m;
-						}
+							else
+								bad=true;
+	
 					}
-				
-			}
+				}
+				if(!bad) {
+					best_obj_in_neighborhood=obj;
+					best=neighbor;
+				}
+			}	
+		}
+		
+		//if(best!=null)
+		//	System.out.println(" --> Move: exam " + best.getM().getE().getId() +" moves :" + best.getM().getTo()+" -->" + best.getM().getFrom());
+
 		return best;
 	}
 
 	
-	
-	public void Solve(long time,long limit)
-	{
-		int cnt=0,d=1;
-		long flat=0;
-		boolean swap=false,changed1=false,changed2=false;
-	 current_solution=Generate_Initial_Solution();
-	   // current_solution=Generate_Initial_Solution_Nemesi();
-	    limit=limit*1000;
+	public void Solve(long time, long limit) {
+
+		current_solution=Generate_Initial_Solution();
 		best_solution=current_solution;
-		System.out.println(current_solution);
+		//System.out.println(current_solution);
 		Print();
 		current_obj=Evaluate(current_solution);
 		best_obj=current_obj;
-		System.out.println("obj di partenza:"+current_obj);
-		
+		//System.out.println("obj di partenza:"+current_obj);
 	//Start Tabu search
+		limit=limit*1000;
 		iteration=0;
-	while(System.currentTimeMillis()-time<limit)
-	{
-		current_solution=best_solution;
-		current_obj=best_obj;
-		while( System.currentTimeMillis()-time<limit/**fraction/5*/)///sostituire con il limite di tempo
-		{					 // primo livello sposto gli esami
-		
-			
-		if(iteration>20)
-		{
-			if(swap==false)
-			neighborhood=GenerateNeighborhoodExams();
-			else
-				neighborhood=Generate_Neighborhood();
-		}
-		else
-			neighborhood=Generate_Neighborhood();
-
-			
-			
-/*			if(iteration<20)
-				neighborhood=Generate_Neighborhood();
+		boolean half=false,reduce=false,quart=false;
+		int relax=0;
+		int factor=0;
+		int countExams=0;  //non serve
+		int countTimeslots=0; //non serve
+		int count_swap=0;
+		int cattivo=0;  //contatore che conta gli swap di esami effettuati che non portano a una soluzione migliore. Quando si trova una soluzine migliore viene azzerato.
+		int count_cattivo=0;  //contatore che serve per tornare allo swap di esami (cioè qundo raggiunge timeslotSwaps) dopo che è entrato in gioco lo swap di timeslot.
+		int badIterationsLimit;  //se dopo questo numero di swap di esami, non si è trovata una soluzione migliore, si passa allo swap di timeslots
+		int timeslotSwaps=tmax/2;  //numero di iterazioni fatte con lo swap d timeslot dopo che badIterationsLimit è raggiunto
+							//3
+		int counterExams=0;
+	
+		if(E>200)
+		{	
+			if(E<600)				
+			{	
 				
-			if(!swap)
-			{
-			 cnt++;
-			neighborhood=GenerateNeighborhoodExams();
-			if(cnt ==80)
-			{
-				cnt=0;
-				swap=true;
-			}
-			}
-			else
-			{
-				cnt++;
-				neighborhood=Generate_Neighborhood();
-				if(cnt==15)
+				if(E<400) //ins 04
 				{
-					cnt=0;
-					swap=false;
+					relax=2*DIM_H;
+					badIterationsLimit=3*DIM_H;
 				}
+					//ins05
+				else				//*2
+				 {
+					factor=25;
+					reduce=true;
+					relax=DIM_H/2;//2
+					badIterationsLimit=DIM_H; //1
+			 }
+			}
+			else	
+			{			//per la 6
+				factor=30;//30
+				reduce=true;
+				relax=DIM_H/4;//4
+				badIterationsLimit=DIM_H/2;//2
+			}
+		}//setto in base al numero di esami
+		else //if(E >100)
+		{
+			relax=2*DIM_H;
+			badIterationsLimit=3*DIM_H;
+		}
+
+		while(System.currentTimeMillis()-time<limit) {
+			neighborhoodExams=GenerateNeighborhoodExams(reduce,factor);
+			Neighbor bestEx=best_In_Neighborhood(tabuExams, neighborhoodExams, 0);
+			Neighbor bestTs = new Neighbor(null,null,-1);
+			if(iteration<30 || cattivo>badIterationsLimit) {
+				neighborhoodTimeslots=Generate_Neighborhood();
+				if(iteration>30&&count_cattivo==0) {
+					tabuTimeslots=new Move[4];
+					lastExams = new Exam[DIM_H];
+					counterExams=0;
+					countTimeslots=0;
+				}
+				bestTs=best_In_Neighborhood(tabuTimeslots, neighborhoodTimeslots, 1);
 			}
 			
-		
-	*/		Neighbor best=best_In_Neighborhood();
+			Neighbor best;
+			double diff=(current_obj-best_obj)/best_obj;//modified ==2*DIM_H no &&
+			if( (cattivo>=relax && lastExams[DIM_H-1]!=null)|| diff>r) {
+				tabuExams=new Move[DIM_TS];
+				lastExams = new Exam[DIM_H];
+				counterExams=0;
+				count_swap=0;
+				System.out.println("relaxing --> " +cattivo + " == " + relax + " diff "+ diff + " --> " + r);
+			}
 			
+			if(bestEx==null || bestTs==null)
+				{
+				tabuExams=new Move[DIM_TS];
+				lastExams = new Exam[DIM_H];
+				counterExams=0;
+				System.out.println("null");
+				}
+			else {
+			if((bestEx.getObj()>bestTs.getObj() && iteration<30 && bestTs.getObj()!=-1)|| cattivo>badIterationsLimit) {  // scambio di timeslot viene fatto nelle prime 30 iterazioni a scelta con lo swap di esami (scelgo il migliore dei due), oppure per sbloccare la situazione
+				best=bestTs;
+				int index=countTimeslots%tabuTimeslots.length;
+				tabuTimeslots[index]=best.getM();
+				countTimeslots++;
+				if(cattivo>badIterationsLimit)
+					count_cattivo++;
+				if(count_cattivo==timeslotSwaps){
+					cattivo=0;
+					count_cattivo=0;
+					tabuTimeslots=new Move[4];
+					tabuExams=new Move[DIM_TS];
+					count_swap++;
+					if(count_swap==8) //aggiunta
+					{
+							lastExams = new Exam[DIM_H]; //modified
+							count_swap=0;
+							System.out.println(" count_swap>5");
+					}
+					System.out.println("swapped");
+				}
+				
+			}
+			else {
+				best = bestEx;
+				best.getM().getE().incMovements();
+				int index=countExams%tabuExams.length;
+				tabuExams[index]=best.getM();
+				if(counterExams<lastExams.length) {
+					if(best.getM().getE().getMovements()>2) {
+						lastExams[counterExams]=best.getM().getE();
+						counterExams++;
+					}
+				}
+				else {
+					boolean ok=false;
+					for(int j=0; j<lastExams.length && ok==false; j++) {
+					//	if(lastExams[j]==null)
+						//	System.out.println("cazzo");
+						if(lastExams[j]!=null && lastExams[j].getMovements()<best.getM().getE().getMovements()) {
+							lastExams[j]=best.getM().getE();
+							ok=true;
+						}
+					}
+				}
+				countExams++;
+			}
+
 			current_solution=best.getSolution();
-			//current_obj=Evaluate(current_solution);
 			current_obj=best.getObj();
 			if(current_obj<best_obj)
-			{
+			{	
+				System.out.println(current_obj + " \t" + best.getM() + " " + "\t iteration: " +iteration);
 				best_obj=current_obj;
 				best_solution=current_solution;
-				System.out.println(best_obj);
-				flat=System.currentTimeMillis();
-				d=1;
+				cattivo=0;
+				count_swap=0;
 			}
-
-			int  index=iteration%tabu.length;
-			 tabu[index]=best.getM();
-
-			iteration++;
-			if(System.currentTimeMillis()-time>limit/4 &&changed1==false)
+			else
+				cattivo++;
+			                                         //3
+			if(System.currentTimeMillis()-time>limit/4 && half==false)
+			{
+				r=0.1;
+				System.out.println("--1/3--");
+				half=true;
+				if(reduce) //la 6 si
 				{
-				changed1=true;
-				Move[] tmp=new Move[15];
-				for(int i=0;i<tabu.length;i++)
-					tmp[i]=tabu[i];
-				tabu=tmp;
+					current_solution=best_solution;//intensifico partendo da best
+					current_obj=best_obj;
+				//reduce=false;
+					factor=5;         // in ins5 cancellato
+					count_swap=0;
+					tabuExams=new Move[DIM_TS];
+					lastExams = new Exam[DIM_H];
 				}
-
-			if(System.currentTimeMillis()-time>limit/2 &&changed2==false)
-			{
-				changed2=true;
-				System.out.println("Changing size");
-				Move[] tmp=new Move[25];
-				for(int i=0;i<tabu.length;i++)
-					tmp[i]=tabu[i];
-				tabu=tmp;
-			}
-			if(System.currentTimeMillis()-time>limit*3/4 &&changed2==false)
-			{
-				changed2=true;
-				System.out.println("Changing size");
-				Move[] tmp=new Move[30];
-				for(int i=0;i<tabu.length;i++)
-					tmp[i]=tabu[i];
-				tabu=tmp;
 			}
 			
-			if(System.currentTimeMillis()-flat>5000*d)
+			if(System.currentTimeMillis()-time>limit*2/3 && quart==false)
 			{
-				d++;//se non trovo migliore dopo swap aspetto il doppio del tempo prima di altro swap
-				flat=System.currentTimeMillis();
-				if(swap==false)
-					swap=true;
-				else
-					swap=false;
-				System.out.println("Flat region-->swapping    d:"+d);
-				//current_solution=best_solution;
-				//current_obj=best_obj;
+				r=0.1;
+				System.out.println("--2/3--");
+				quart=true;
+				if(reduce) //la 6 si
+				{
+					current_solution=best_solution;//intensifico partendo da best
+					current_obj=best_obj;
+					reduce=false;
+//					count_swap=0;
+	///				tabuExams=new Move[DIM_TS];
+		//			lastExams = new Exam[DIM_H];
+				}
 			}
+			iteration++;
 		}
-
-	}
+		}
 		Print();
 		
-		System.out.println(current_solution);
 		System.out.println(best_solution);
 		System.out.println("obj di arrivo: "+best_obj);
 		System.out.println(Evaluate(best_solution));
-		System.out.println("Iterations: "+iteration);
-		System.out.println(("total time: "+(System.currentTimeMillis()-time)));
+		System.out.println(("total time: "+(System.currentTimeMillis()-time))+ " iterations --> " + iteration);
+		
+		System.gc();
 		return  ;
 	}
-
-
 }
+

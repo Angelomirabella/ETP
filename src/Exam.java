@@ -2,11 +2,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Exam implements Cloneable{
-	private int id;//nemesi,conflict;
+	private int id;
 	private int tot_stud;
 	private Integer time_slot;
 	private List<String> students;
 	private List<Integer> timeSlotsDisponibili;
+	private int movements=0;
 
 	public Exam(int id,int tot_stud)
 	{
@@ -24,6 +25,14 @@ public class Exam implements Cloneable{
 	public List<String> getStudents() {
 		return students;
 	}
+	
+	public void incMovements() {
+		movements++;
+	}
+
+	public int getMovements() {
+		return movements;
+	}
 
 
 	public int getId() {
@@ -31,24 +40,11 @@ public class Exam implements Cloneable{
 	}
 
 
-	/*public int getNemesi() {
-		return nemesi;
-	}
-
-	public int getConflict() {
-		return conflict;
-	}
-*/
 	public int getTot_stud() {
 		return tot_stud;
 	}
 
-/*	public void setNemesi(int nemesi,int conflict)
-	{
-		this.nemesi=nemesi;
-		this.conflict=conflict;
-		return;
-	}*/
+
 	public Integer getTime_slot() {
 		return time_slot;
 	}
@@ -66,7 +62,6 @@ public class Exam implements Cloneable{
 		return timeSlotsDisponibili;
 	}
 
-	
 	public void setTimeSlotsDisponibili(List<Integer> timeSlotsDisponibili) {
 		this.timeSlotsDisponibili = timeSlotsDisponibili;
 	}
