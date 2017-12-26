@@ -635,7 +635,7 @@ public class TimeTable {
 					//ins05
 				else				//*2
 				 {
-					factor=22;
+					factor=24;
 					reduce=true;
 					relax=DIM_H/2;//2
 					badIterationsLimit=DIM_H; //1
@@ -767,7 +767,7 @@ public class TimeTable {
 				}
 			}
 			
-			if(System.currentTimeMillis()-time>limit*2 && quart==false)
+			if(System.currentTimeMillis()-time>limit/2 && quart==false)
 			{
 				r=0.1;
 				System.out.println("--2/3--");
