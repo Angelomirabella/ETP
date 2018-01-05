@@ -238,13 +238,13 @@ public class TimeTable {
 	
 	
 	
-	private void Print()
+	/*private void Print()
 	{
 		try(PrintWriter out=new PrintWriter(new FileWriter("C:\\Users\\angij\\Desktop\\Polito magistrale 1 anno\\Optimization methods and algoritms\\Assignment\\instancename_OMAAL_group04.sol")))
 		{			
 			best_solution.values().stream().flatMap(l->l.stream()).sorted(comparing(e->e.getId())).forEach(e->out.format("%d %d\n",e.getId(),e.getTime_slot()));
 	 }catch (IOException e) {};
-	}
+	}*/
 	
 	private SortedMap<Integer,List<Exam>> initializeInitialSolution() {
 		SortedMap<Integer,List<Exam>> solution = new TreeMap<>();
@@ -260,9 +260,6 @@ public class TimeTable {
 		return esami;
 	}
 
-	private Object sum(int size) {
-		return num=num+size;
-	}
 
 	public int checkTimeslot(int j, int i,SortedMap<Integer,List<Exam>> solution) {
 		final int idx = i;
@@ -605,15 +602,14 @@ public class TimeTable {
 	}
 
 	
-	public void Solve(long time, long limit) {
+	public Neighbor Solve(long time, long limit) {
 
 		current_solution=Generate_Initial_Solution();
 		best_solution=current_solution;
 		//System.out.println(current_solution);
-		Print();
 		current_obj=Evaluate(current_solution);
 		best_obj=current_obj;
-		//System.out.println("obj di partenza:"+current_obj);
+		System.out.println("obj di partenza:"+current_obj);
 		limit=limit*1000;
 		iteration=0;
 		boolean swapped=false,reduce=false,quart=false;
@@ -676,7 +672,7 @@ public class TimeTable {
 			relax=2*DIM_H;
 			badIterationsLimit=3*DIM_H;
 		}
-		System.out.println("factor--> "+factor);
+	//	System.out.println("factor--> "+factor);
 
 		//Start Tabu search
 
@@ -703,7 +699,7 @@ public class TimeTable {
 				counterExams=0;
 				count_relax++;
 				count_swap=0;
-				System.out.println("relaxing --> " +cattivo + " == " + relax + " diff "+ diff + " --> " + r);
+			//	System.out.println("relaxing --> " +cattivo + " == " + relax + " diff "+ diff + " --> " + r);
 
 			}
 			
@@ -712,7 +708,7 @@ public class TimeTable {
 				tabuExams=new Move[DIM_TS];
 				lastExams = new Exam[DIM_H];
 				counterExams=0;
-				System.out.println("null");
+			//	System.out.println("null");
 				}
 			else {
 			if((bestEx.getObj()>bestTs.getObj() && iteration<30 && bestTs.getObj()!=-1)|| cattivo>badIterationsLimit) {  // scambio di timeslot viene fatto nelle prime 30 iterazioni a scelta con lo swap di esami (scelgo il migliore dei due), oppure per sbloccare la situazione
@@ -728,11 +724,11 @@ public class TimeTable {
 					tabuTimeslots=new Move[4];
 					tabuExams=new Move[DIM_TS];
 					count_swap++;
-					System.out.println("swapped");
+				//	System.out.println("swapped");
 					if(count_swap==5)
 					{
 						lastExams = new Exam[DIM_H];
-						System.out.println("---relaxed swap---");
+			//			System.out.println("---relaxed swap---");
 						count_swap=0;
 					}
 				}
@@ -765,7 +761,7 @@ public class TimeTable {
 			current_obj=best.getObj();
 			if(current_obj<best_obj)
 			{	
-				System.out.println(current_obj + " \t" + best.getM() + " " + "\t iteration: " +iteration);
+		//		System.out.println(current_obj + " \t" + best.getM() + " " + "\t iteration: " +iteration);
 				best_obj=current_obj;
 				best_solution=current_solution;
 				cattivo=0;
@@ -779,15 +775,15 @@ public class TimeTable {
 			iteration++;
 		}
 		}
-		Print();
 		
-		System.out.println(best_solution);
-		System.out.println("obj di arrivo: "+best_obj);
-		System.out.println(Evaluate(best_solution));
+	//	System.out.println(best_solution);
+	//	System.out.println("obj di arrivo: "+best_obj);
+	//	System.out.println(Evaluate(best_solution));
 		System.out.println(("total time: "+(System.currentTimeMillis()-time))+ " iterations --> " + it+" total iterations --> "+ iteration);
 		
 		System.gc();
-		return  ;
+		Neighbor end=new Neighbor(best_solution,null,best_obj);
+		return  end;
 	}
 }
 
