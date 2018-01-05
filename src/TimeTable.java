@@ -14,13 +14,13 @@ import static java.util.stream.Collectors.*;
 import static java.util.Comparator.*; 
 public class TimeTable {
 	private Integer tmax;
-	private List<Exam> esamiPeggiori;
+	private List<Exam> worstExams;
 	private SortedMap<Integer,Exam> exams;
 	private SortedMap<String,List<Exam>> students;  //per ogni matricola la lista degli esami a cui si è iscritto
 	private int[][] n;
 	private int E,iteration,S,count, worst,num;
 	private double current_obj,best_obj;
-	private boolean trovato = false, compatibile=true, continua=true;
+	private boolean founded = false, compatibile=true, continua=true;
 	private SortedMap<Integer,List<Exam>> initialSolution;
 	private SortedMap<Integer,List<Exam>> current_solution;
 	private SortedMap<Integer,List<Exam>> best_solution;
@@ -44,7 +44,6 @@ public class TimeTable {
 		students=new TreeMap<>();
 		current_solution=new TreeMap<>();
 		tabuTimeslots=new Move[4];
-		//tabuExams=new Move[DIM_TS];
 		
 		neighborhoodExams=new ArrayList<>();
 		neighborhoodTimeslots=new ArrayList<>();
@@ -141,8 +140,7 @@ public class TimeTable {
 		
 			lastExams = new Exam[DIM_H];
 		 System.out.println("light--> " + DIM_H);
-		 try(BufferedReader in=new BufferedReader(new FileReader(stu));
-			 PrintWriter out=new PrintWriter(new FileWriter("prova.txt")))
+		 try(BufferedReader in=new BufferedReader(new FileReader(stu));)
 		 {   
 			
 			 String line;
@@ -236,15 +234,7 @@ public class TimeTable {
 		return obj/S;
 	}
 	
-	
-	
-	/*private void Print()
-	{
-		try(PrintWriter out=new PrintWriter(new FileWriter("C:\\Users\\angij\\Desktop\\Polito magistrale 1 anno\\Optimization methods and algoritms\\Assignment\\instancename_OMAAL_group04.sol")))
-		{			
-			best_solution.values().stream().flatMap(l->l.stream()).sorted(comparing(e->e.getId())).forEach(e->out.format("%d %d\n",e.getId(),e.getTime_slot()));
-	 }catch (IOException e) {};
-	}*/
+
 	
 	private SortedMap<Integer,List<Exam>> initializeInitialSolution() {
 		SortedMap<Integer,List<Exam>> solution = new TreeMap<>();
@@ -254,10 +244,10 @@ public class TimeTable {
 		return solution;
 	}
 
-	private SortedMap<Integer,Exam> copiaEsami() {
-		SortedMap<Integer,Exam> esami = new TreeMap<>();
-		exams.entrySet().stream().forEach(e-> esami.put(e.getKey(), e.getValue()));
-		return esami;
+	private SortedMap<Integer,Exam> copyExams() {
+		SortedMap<Integer,Exam> ex = new TreeMap<>();
+		exams.entrySet().stream().forEach(e-> ex.put(e.getKey(), e.getValue()));
+		return ex;
 	}
 
 
@@ -279,36 +269,36 @@ public class TimeTable {
 	}
 
 	public SortedMap <Integer,List<Exam>> Generate_Initial_Solution() {
-		while(!trovato){
+		while(!founded){
 			initialSolution = initializeInitialSolution();  				
-			SortedMap<Integer,Exam> esamiDaAssegnare = copiaEsami(); 		
+			SortedMap<Integer,Exam> examsToSchedule = copyExams(); 		
 			continua=true;
 			
-			while(!esamiDaAssegnare.isEmpty() && continua) {	
-				Exam esameScelto;
+			while(!examsToSchedule.isEmpty() && continua) {	
+				Exam chosenExam;
 				worst=tmax;													
-				esamiPeggiori = new ArrayList<>();
-				Iterator<Exam> iter = esamiDaAssegnare.values().iterator();
+				worstExams = new ArrayList<>();
+				Iterator<Exam> iter = examsToSchedule.values().iterator();
 				
 				while(iter.hasNext() && continua) {
 					Exam e = iter.next();
-					List<Integer> timeSlotsDisponibili = new ArrayList<>();
+					List<Integer> availableTimeSlots = new ArrayList<>();
 					count=0;
 					for(int i=1; i<=tmax; i++){
 						if(checkTimeslot(i, e.getId(),initialSolution)==0){
 							count++;
-							timeSlotsDisponibili.add(i);
+							availableTimeSlots.add(i);
 						}
 					}
-					if(!timeSlotsDisponibili.isEmpty()) {
-						e.setTimeSlotsDisponibili(timeSlotsDisponibili);
-						if(count<worst || esamiPeggiori.isEmpty()){
-							esamiPeggiori = new ArrayList<>();
+					if(!availableTimeSlots.isEmpty()) {
+						e.setAvailableTimeSlots(availableTimeSlots);
+						if(count<worst || worstExams.isEmpty()){
+							worstExams = new ArrayList<>();
 							worst=count;
-							esamiPeggiori.add(e);
+							worstExams.add(e);
 						}
 						else if(count==worst){
-							esamiPeggiori.add(e);
+							worstExams.add(e);
 						}
 					}
 					else
@@ -316,16 +306,16 @@ public class TimeTable {
 				}
 				
 				if(continua) {
-					esameScelto = esamiPeggiori.get(new Random().nextInt(esamiPeggiori.size()));
-					int r = esameScelto.getTimeSlotsDisponibili().get(new Random().nextInt(esameScelto.getTimeSlotsDisponibili().size()));
-					initialSolution.get(r).add(esameScelto);
-					esameScelto.setTime_slot(r);
-					esamiDaAssegnare.remove(esameScelto.getId());
+					chosenExam = worstExams.get(new Random().nextInt(worstExams.size()));
+					int r = chosenExam.getAvailableTimeSlots().get(new Random().nextInt(chosenExam.getAvailableTimeSlots().size()));
+					initialSolution.get(r).add(chosenExam);
+					chosenExam.setTime_slot(r);
+					examsToSchedule.remove(chosenExam.getId());
 				}
 			}
 			
-			if(esamiDaAssegnare.isEmpty())
-				trovato=true;
+			if(examsToSchedule.isEmpty())
+				founded=true;
 		}
 		
 	//	initialSolution.values().stream().forEach(t->sum(t.size()));
@@ -452,7 +442,7 @@ public class TimeTable {
 				   move=new Move(second.get(0),j,i);
 				else
 				   move=new Move(first.get(0),i,j);
-				move.setScambiato(first.get(0));
+				move.setExhanged(first.get(0));
 			    Neighbor n=new Neighbor(neighbor,move,obj_neighbor);
 			    res.add(n);
 			
@@ -468,27 +458,27 @@ public class TimeTable {
 		List<Neighbor> res=new ArrayList<>();
 		
 		for(int i=1;i<=tmax;i++) {
-			List<Exam> esami=current_solution.get(i);
-			Iterator<Exam> iter = esami.iterator();
+			List<Exam> ex=current_solution.get(i);
+			Iterator<Exam> iter = ex.iterator();
 			while(iter.hasNext()) {
 				Exam e = iter.next();
-				int index=esami.indexOf(e);
-				List<Integer> timeSlotsDisponibili = new ArrayList<>();
+				int index=ex.indexOf(e);
+				List<Integer> availableTimeslots = new ArrayList<>();
 				for(int k=1; k<=tmax; k++){
 					if(checkTimeslot(k, e.getId(), current_solution)==0 && k!=i){
-						timeSlotsDisponibili.add(k);
+						availableTimeslots.add(k);
 					}
 				}
-				if(!timeSlotsDisponibili.isEmpty()) {
+				if(!availableTimeslots.isEmpty()) {
 						int r=new Random().nextInt(factor);//25
 						if(r==0 || reduce==false) {
 					
-					SortedMap<Integer,List<Exam>> vicino1=Clone_solution();
+					SortedMap<Integer,List<Exam>> neig1=Clone_solution();
 					double diff=current_obj*S;
-					Exam e_int=vicino1.get(i).get(index);
+					Exam e_int=neig1.get(i).get(index);
 					for(int k=i-5;k<=i+5 &&k<=tmax;k++) {
 						if(k>0 && k!=i) {
-							List<Exam> l_int=vicino1.get(k);
+							List<Exam> l_int=neig1.get(k);
 							Iterator<Exam> iter_int=l_int.iterator();
 							while(iter_int.hasNext()) {
 								Exam e2=iter_int.next();
@@ -504,18 +494,18 @@ public class TimeTable {
 						}
 					}
 					
-					Iterator<Integer> iter2 = timeSlotsDisponibili.iterator();
+					Iterator<Integer> iter2 = availableTimeslots.iterator();
 					while(iter2.hasNext()) {
 						int t=iter2.next();
-						SortedMap<Integer,List<Exam>> vicino=Clone_solution();
-						e_int=vicino.get(i).get(index);
+						SortedMap<Integer,List<Exam>> neig=Clone_solution();
+						e_int=neig.get(i).get(index);
 						double obj_neighbor=diff;
-						vicino.get(t).add(e_int);
+						neig.get(t).add(e_int);
 						e_int.setTime_slot(t);
-						vicino.get(i).remove(index);
+						neig.get(i).remove(index);
 						for(int k=t-5;k<=t+5 &&k<=tmax;k++) {
 							if(k>0 && k!=t) {
-								List<Exam> l_int=vicino.get(k);
+								List<Exam> l_int=neig.get(k);
 								Iterator<Exam> iter_int=l_int.iterator();
 								while(iter_int.hasNext()) {
 									Exam e2=iter_int.next();
@@ -532,7 +522,7 @@ public class TimeTable {
 						}
 						
 						obj_neighbor=obj_neighbor/S;
-						Neighbor nei=new Neighbor(vicino, new Move(e_int, t, i),obj_neighbor);
+						Neighbor nei=new Neighbor(neig, new Move(e_int, t, i),obj_neighbor);
 						res.add(nei);
 						
 					}
@@ -577,7 +567,7 @@ public class TimeTable {
 				if(bad==false) {
 					for(int i=0;i<tabu.length && tabu[i]!=null;i++) {																																								//modified
 						if(tabu[i]!=null && (ts==0 && tabu[i].getE().getId()==m.getE().getId() && ((tabu[i].getTo()==m.getFrom() && tabu[i].getFrom()==m.getTo()) || (tabu[i].getTo()==m.getTo() && tabu[i].getFrom()==m.getFrom()) || tabu[i].getTo()==m.getFrom())
-								|| (ts==1 && tabu[i].getScambiato()!=null && (tabu[i].getE().getId()==m.getE().getId() || m.getE().getId()==tabu[i].getScambiato().getId()) && ((tabu[i].getTo()==m.getFrom() && tabu[i].getFrom()==m.getTo()) || (tabu[i].getTo()==m.getTo() && tabu[i].getFrom()==m.getFrom())))))
+								|| (ts==1 && tabu[i].getExhanged()!=null && (tabu[i].getE().getId()==m.getE().getId() || m.getE().getId()==tabu[i].getExhanged().getId()) && ((tabu[i].getTo()==m.getFrom() && tabu[i].getFrom()==m.getTo()) || (tabu[i].getTo()==m.getTo() && tabu[i].getFrom()==m.getFrom())))))
 							if(obj<best_obj) { //aspiration
 								best=neighbor;
 								best_obj_in_neighborhood=obj;
@@ -612,17 +602,15 @@ public class TimeTable {
 		System.out.println("obj di partenza:"+current_obj);
 		limit=limit*1000;
 		iteration=0;
-		boolean swapped=false,reduce=false,quart=false;
+		boolean reduce=false;
 		int relax=0;
 		int it=0;
 		int factor=1;
 		int countExams=0;  //non serve
 		int countTimeslots=0; //non serve
 		int count_swap=0;
-		int count_relax = 0;
-		int count_limit=50;
-		int cattivo=0;  //contatore che conta gli swap di esami effettuati che non portano a una soluzione migliore. Quando si trova una soluzine migliore viene azzerato.
-		int count_cattivo=0;  //contatore che serve per tornare allo swap di esami (cioè qundo raggiunge timeslotSwaps) dopo che è entrato in gioco lo swap di timeslot.
+		int bad=0;  //contatore che conta gli swap di esami effettuati che non portano a una soluzione migliore. Quando si trova una soluzine migliore viene azzerato.
+		int count_bad=0;  //contatore che serve per tornare allo swap di esami (cioè qundo raggiunge timeslotSwaps) dopo che è entrato in gioco lo swap di timeslot.
 		int badIterationsLimit;  //se dopo questo numero di swap di esami, non si è trovata una soluzione migliore, si passa allo swap di timeslots
 		int timeslotSwaps=tmax/2;  //numero di iterazioni fatte con lo swap d timeslot dopo che badIterationsLimit è raggiunto
 							//3
@@ -680,9 +668,9 @@ public class TimeTable {
 			neighborhoodExams=GenerateNeighborhoodExams(reduce,factor);
 			Neighbor bestEx=best_In_Neighborhood(tabuExams, neighborhoodExams, 0);
 			Neighbor bestTs = new Neighbor(null,null,-1);
-			if(iteration<30 || cattivo>badIterationsLimit) {
+			if(iteration<30 || bad>badIterationsLimit) {
 				neighborhoodTimeslots=Generate_Neighborhood();
-				if(iteration>30&&count_cattivo==0) {
+				if(iteration>30&&count_bad==0) {
 					tabuTimeslots=new Move[4];
 					lastExams = new Exam[DIM_H];
 					counterExams=0;
@@ -693,11 +681,10 @@ public class TimeTable {
 			
 			Neighbor best;
 			double diff=(current_obj-best_obj)/best_obj;//modified ==2*DIM_H no &&
-			if( (cattivo>=relax && lastExams[DIM_H-1]!=null)|| diff>r) {
+			if( (bad>=relax && lastExams[DIM_H-1]!=null)|| diff>r) {
 				tabuExams=new Move[DIM_TS];
 				lastExams = new Exam[DIM_H];
 				counterExams=0;
-				count_relax++;
 				count_swap=0;
 			//	System.out.println("relaxing --> " +cattivo + " == " + relax + " diff "+ diff + " --> " + r);
 
@@ -711,16 +698,16 @@ public class TimeTable {
 			//	System.out.println("null");
 				}
 			else {
-			if((bestEx.getObj()>bestTs.getObj() && iteration<30 && bestTs.getObj()!=-1)|| cattivo>badIterationsLimit) {  // scambio di timeslot viene fatto nelle prime 30 iterazioni a scelta con lo swap di esami (scelgo il migliore dei due), oppure per sbloccare la situazione
+			if((bestEx.getObj()>bestTs.getObj() && iteration<30 && bestTs.getObj()!=-1)|| bad>badIterationsLimit) {  // scambio di timeslot viene fatto nelle prime 30 iterazioni a scelta con lo swap di esami (scelgo il migliore dei due), oppure per sbloccare la situazione
 				best=bestTs;
 				int index=countTimeslots%tabuTimeslots.length;
 				tabuTimeslots[index]=best.getM();
 				countTimeslots++;
-				if(cattivo>badIterationsLimit)
-					count_cattivo++;
-				if(count_cattivo==timeslotSwaps){
-					cattivo=0;
-					count_cattivo=0;
+				if(bad>badIterationsLimit)
+					count_bad++;
+				if(count_bad==timeslotSwaps){
+					bad=0;
+					count_bad=0;
 					tabuTimeslots=new Move[4];
 					tabuExams=new Move[DIM_TS];
 					count_swap++;
@@ -764,13 +751,12 @@ public class TimeTable {
 		//		System.out.println(current_obj + " \t" + best.getM() + " " + "\t iteration: " +iteration);
 				best_obj=current_obj;
 				best_solution=current_solution;
-				cattivo=0;
+				bad=0;
 				count_swap=0;
-				count_relax=0;
 				it=iteration;
 			}
 			else
-				cattivo++;
+				bad++;
 			                       
 			iteration++;
 		}

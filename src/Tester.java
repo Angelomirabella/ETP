@@ -5,14 +5,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*; 
 public class Tester implements Runnable {
-private TimeTable t1,t2,t3,t4;
 private static Neighbor[] neighbors;
 private static Neighbor best;
 private static String exm;
 private static String slo;
 private static String stu;
 private static String instance;
-private static int count=0;
 private static long limit;
 private static long time;
 private static double min=-1;
@@ -35,7 +33,7 @@ private String name;
 		slo=".\\"+instance+".slo";
 		stu= ".\\"+instance+".stu";
 		exm=".\\"+instance+".exm";
-		limit=Long.parseLong(args[1]);
+		limit=Long.parseLong(args[2]);
 		Thread t1,t2,t3,t4;
 		Runnable r1,r2,r3,r4;
 		r1=new Tester("0");
@@ -87,7 +85,7 @@ private String name;
 	
 	private static void Print(SortedMap <Integer,List<Exam>> best, String instance)
 	{
-		try(PrintWriter out=new PrintWriter(new FileWriter("C:\\Users\\angij\\Desktop\\Polito magistrale 1 anno\\Optimization methods and algoritms\\Assignment\\instancename_OMAAL_group04.sol")))
+		try(PrintWriter out=new PrintWriter(new FileWriter(".\\"+instance+"_OMAAL_group04.sol")))
 		{			
 			best.values().stream().flatMap(l->l.stream()).sorted(comparing(e->e.getId())).forEach(e->out.format("%d %d\n",e.getId(),e.getTime_slot()));
 	 }catch (IOException e) {};

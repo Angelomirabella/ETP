@@ -2,7 +2,7 @@
 public class Move {
 	private Exam e;
 	private int from,to;
-	private Exam scambiato;
+	private Exam exhanged;
 	
 	
 	
@@ -24,14 +24,14 @@ public class Move {
 
 
 
-	public Exam getScambiato() {
-		return scambiato;
+	public Exam getExhanged() {
+		return exhanged;
 	}
 
 
 
-	public void setScambiato(Exam scambiato) {
-		this.scambiato = scambiato;
+	public void setExhanged(Exam exhanged) {
+		this.exhanged = exhanged;
 	}
 
 
@@ -40,7 +40,7 @@ public class Move {
 		this.e = e;
 		this.from = from;
 		this.to = to;
-		scambiato=null;
+		exhanged=null;
 	}
 	public boolean Equals(Move m)
 	{

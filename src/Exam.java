@@ -6,7 +6,7 @@ public class Exam implements Cloneable{
 	private int tot_stud;
 	private Integer time_slot;
 	private List<String> students;
-	private List<Integer> timeSlotsDisponibili;
+	private List<Integer> availableTimeSlots;
 	private int movements=0;
 
 	public Exam(int id,int tot_stud)
@@ -15,7 +15,7 @@ public class Exam implements Cloneable{
 		this.tot_stud=tot_stud;
 		time_slot=-1;
 		students=new ArrayList<>();
-		timeSlotsDisponibili = new ArrayList<>();
+		availableTimeSlots = new ArrayList<>();
 	}
 //x
 
@@ -58,12 +58,12 @@ public class Exam implements Cloneable{
 		return "esame " + id;
 	}
 	
-	public List<Integer> getTimeSlotsDisponibili() {
-		return timeSlotsDisponibili;
+	public List<Integer> getAvailableTimeSlots() {
+		return availableTimeSlots;
 	}
 
-	public void setTimeSlotsDisponibili(List<Integer> timeSlotsDisponibili) {
-		this.timeSlotsDisponibili = timeSlotsDisponibili;
+	public void setAvailableTimeSlots(List<Integer> availableTimeSlots) {
+		this.availableTimeSlots = availableTimeSlots;
 	}
 	public Object clone(){
 		try {Exam e = (Exam) super.clone(); 
